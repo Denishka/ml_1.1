@@ -1,9 +1,15 @@
 import nltk
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import plot_confusion_matrix
+from sklearn import metrics
 import pymorphy2
 import re
 from nltk.corpus import stopwords
@@ -11,9 +17,11 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 from textblob import TextBlob, Word
+
 lemmatizer = WordNetLemmatizer()
 
-def get_wordnet_pos(word): #Wordnet Lemmatizer с соответствующим POS-тегом
+
+def get_wordnet_pos(word):  # Wordnet Lemmatizer с соответствующим POS-тегом
     tag = nltk.pos_tag([word])[0][1][0].upper()
     tag_dict = {"J": wordnet.ADJ,
                 "N": wordnet.NOUN,
@@ -21,7 +29,8 @@ def get_wordnet_pos(word): #Wordnet Lemmatizer с соответствующим
                 "R": wordnet.ADV}
     return tag_dict.get(tag, wordnet.NOUN)
 
-def lemmatize_with_postag(sentence): #TextBlob Lemmatizer с соответствующим POS-тегом (часть речи)
+
+def lemmatize_with_postag(sentence):  # TextBlob Lemmatizer с соответствующим POS-тегом (часть речи)
     sent = TextBlob(sentence)
     tag_dict = {"J": 'a',
                 "N": 'n',
@@ -31,11 +40,15 @@ def lemmatize_with_postag(sentence): #TextBlob Lemmatizer с соответст�
     lemmatized_list = [wd.lemmatize(tag) for wd, tag in words_and_tags]
     return " ".join(lemmatized_list)
 
+
 def get_idf(arr):
     N = arr.shape[0]
-    res = np.copy(arr)
-    df = np.count_nonzero(res, axis=0)
-    return np.log((N + 1) / (df + 1)) + 1
+    df = np.count_nonzero(arr, axis=0)
+    return np.log((1 + N) / (1 + df)) + 1
+
+def get_tf_df(idf, arr):
+    return np.multiply(idf, arr)
+
 
 def preprocess_sentence(x):
     new_x = re.sub(r'[^\w\s]', ' ', x)  # удаляем знаки препинания
@@ -43,11 +56,10 @@ def preprocess_sentence(x):
     tokens = [token.lower() for token in tokens]  # меняем Заглавные на lower
     tokens = [i for i in tokens if (i not in stopwords.words('english'))]
 
-    tokens = [lemmatizer.lemmatize(token, get_wordnet_pos(token)) for token in tokens] #Wordnet Lemmatizer с соответствующим POS-тегом
-    #tokens = [lemmatize_with_postag(token) for token in tokens] # TextBlob Lemmatizer
+    tokens = [lemmatizer.lemmatize(token, get_wordnet_pos(token)) for token in
+              tokens]  # Wordnet Lemmatizer с соответствующим POS-тегом
+    # tokens = [lemmatize_with_postag(token) for token in tokens] # TextBlob Lemmatizer
     return ' '.join(tokens)
-
-
 
 
 if __name__ == '__main__':
@@ -58,12 +70,11 @@ if __name__ == '__main__':
     le = LabelEncoder()
     df['v1'] = le.fit_transform(df['v1'])
 
-
     # print(df)
     # df2 = df.head(2500)
     print(preprocess_sentence("better"))
 
-    #print(lemmatizer.lemmatize('better', pos ="a"))
+    # print(lemmatizer.lemmatize('better', pos ="a"))
 
     df['v2'] = df['v2'].apply(preprocess_sentence)
 
@@ -77,15 +88,39 @@ if __name__ == '__main__':
     x_train = np.delete(x_train, indices_row_null, axis=0)
     y_train = np.delete(y_train, indices_row_null, axis=0)
 
-   # print('{1}-grams: {0}'.format(vectorizer.get_feature_names(), 2)) вывод токенов в виде ngram = 2
+    # print('{1}-grams: {0}'.format(vectorizer.get_feature_names(), 2)) вывод токенов в виде ngram = 2
 
     x_test = vectorizer.transform(x_test).toarray()
-    #x_test = vectorizer.transform(x_test).todense()
-    get_idf(x_train)
-
+    # x_test = vectorizer.transform(x_test).todense()
+    idf = get_idf(x_train)
+    X_train = get_tf_df(idf, x_train)
+    #print(df)
+    idff = get_idf(x_test)
+    x_test = get_tf_df(get_idf(x_test), x_test)
     print(df)
 
+    model = SGDClassifier()
+    model.fit(x_train, y_train)
 
+    y_pred = model.predict(x_test)
+
+    confusion_matrix = metrics.confusion_matrix(y_test, y_pred)
+    print(confusion_matrix)
+
+    TP = confusion_matrix[1, 1]
+    TN = confusion_matrix[0, 0]
+    FN = confusion_matrix[0, 1]
+    FP = confusion_matrix[1, 0]
+
+    print({"Accuracy": (TP + TN) / (TP + FN + TN + FP)})
+    print({"Precision": TP / (TP + FP)})
+    print({"Recall": TP / (TP + FN)})
+
+
+
+
+    #plot_confusion_matrix(model, x_test, y_test)
+    #plt.show()
 
     # TF Количество раз, которое слово встречается в документе, деленное на общее количество слов в документе.
 
