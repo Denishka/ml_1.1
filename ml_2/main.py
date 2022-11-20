@@ -31,7 +31,11 @@ def lemmatize_with_postag(sentence): #TextBlob Lemmatizer с соответст�
     lemmatized_list = [wd.lemmatize(tag) for wd, tag in words_and_tags]
     return " ".join(lemmatized_list)
 
-
+def get_idf(arr):
+    N = arr.shape[0]
+    res = np.copy(arr)
+    df = np.count_nonzero(res, axis=0)
+    return np.log((N + 1) / (df + 1)) + 1
 
 def preprocess_sentence(x):
     new_x = re.sub(r'[^\w\s]', ' ', x)  # удаляем знаки препинания
@@ -77,7 +81,7 @@ if __name__ == '__main__':
 
     x_test = vectorizer.transform(x_test).toarray()
     #x_test = vectorizer.transform(x_test).todense()
-
+    get_idf(x_train)
 
     print(df)
 
