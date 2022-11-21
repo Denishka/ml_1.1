@@ -2,6 +2,7 @@ import nltk
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import spacy
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -16,8 +17,14 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
+from spacy.lang.en import English
 from textblob import TextBlob, Word
+from sklearn import metrics
 
+#
+# spacy.load('en_core_web_sm')
+# nlp = spacy.load('en_core_web_lg')
+# en = spacy.load('en_core_web_sm')
 lemmatizer = WordNetLemmatizer()
 
 
@@ -47,7 +54,7 @@ def get_idf(arr):
     return np.log((1 + N) / (1 + df)) + 1
 
 def get_tf_df(idf, arr):
-    return np.multiply(idf, arr)
+    return idf*arr
 
 
 def preprocess_sentence(x):
@@ -55,11 +62,11 @@ def preprocess_sentence(x):
     tokens = word_tokenize(new_x)  # токенизируем
     tokens = [token.lower() for token in tokens]  # меняем Заглавные на lower
     tokens = [i for i in tokens if (i not in stopwords.words('english'))]
-
     tokens = [lemmatizer.lemmatize(token, get_wordnet_pos(token)) for token in
               tokens]  # Wordnet Lemmatizer с соответствующим POS-тегом
     # tokens = [lemmatize_with_postag(token) for token in tokens] # TextBlob Lemmatizer
     return ' '.join(tokens)
+
 
 
 if __name__ == '__main__':
@@ -95,7 +102,6 @@ if __name__ == '__main__':
     idf = get_idf(x_train)
     X_train = get_tf_df(idf, x_train)
     #print(df)
-    idff = get_idf(x_test)
     x_test = get_tf_df(get_idf(x_test), x_test)
     print(df)
 
@@ -112,13 +118,17 @@ if __name__ == '__main__':
     FN = confusion_matrix[0, 1]
     FP = confusion_matrix[1, 0]
 
-    print({"Accuracy": (TP + TN) / (TP + FN + TN + FP)})
-    print({"Precision": TP / (TP + FP)})
-    print({"Recall": TP / (TP + FN)})
+    print(f"Accuracy: {(TP + TN) / (TP + FN + TN + FP)}")
+    print(f"Precision: {TP / (TP + FP)}")
+    print(f"Recall: {TP / (TP + FN)}")
 
-
-
-
+    y_pred_proba = model.decision_function(x_test)
+    fpr, tpr, _ = metrics.roc_curve(y_test, y_pred_proba)
+    # create ROC curve
+    plt.plot(fpr, tpr)
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.show()
     #plot_confusion_matrix(model, x_test, y_test)
     #plt.show()
 
