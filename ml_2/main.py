@@ -53,7 +53,7 @@ def get_idf(arr):
     df = np.count_nonzero(arr, axis=0)
     return np.log((1 + N) / (1 + df)) + 1
 
-def get_tf_df(idf, arr):
+def get_tf_idf(idf, arr):
     return idf*arr
 
 
@@ -87,23 +87,21 @@ if __name__ == '__main__':
 
     x_train, x_test, y_train, y_test = train_test_split(df['v2'].values, df['v1'].values, test_size=0.33,
                                                         random_state=42)
+    # Bag of Words
     vectorizer = CountVectorizer(ngram_range=(2, 2))
-
     x_train = vectorizer.fit_transform(x_train).toarray()
+    x_test = vectorizer.transform(x_test).toarray()
 
     indices_row_null = np.where(np.all(x_train == 0, axis=1))
     x_train = np.delete(x_train, indices_row_null, axis=0)
     y_train = np.delete(y_train, indices_row_null, axis=0)
 
-    # print('{1}-grams: {0}'.format(vectorizer.get_feature_names(), 2)) вывод токенов в виде ngram = 2
+   # print('{1}-grams: {0}'.format(vectorizer.get_feature_names(), 2)) #вывод токенов в виде ngram = 2
 
-    x_test = vectorizer.transform(x_test).toarray()
-    # x_test = vectorizer.transform(x_test).todense()
+    # вычисление tf-idf
     idf = get_idf(x_train)
-    X_train = get_tf_df(idf, x_train)
-    #print(df)
-    x_test = get_tf_df(get_idf(x_test), x_test)
-    print(df)
+    X_train = get_tf_idf(idf, x_train)
+    x_test = get_tf_idf(idf, x_test)
 
     model = SGDClassifier()
     model.fit(x_train, y_train)
@@ -113,26 +111,24 @@ if __name__ == '__main__':
     confusion_matrix = metrics.confusion_matrix(y_test, y_pred)
     print(confusion_matrix)
 
-    TP = confusion_matrix[1, 1]
-    TN = confusion_matrix[0, 0]
-    FN = confusion_matrix[0, 1]
-    FP = confusion_matrix[1, 0]
+    # TN = confusion_matrix[1, 1]
+    # TP = confusion_matrix[0, 0]
+    # FP = confusion_matrix[0, 1]
+    # FN = confusion_matrix[1, 0]
 
-    print(f"Accuracy: {(TP + TN) / (TP + FN + TN + FP)}")
-    print(f"Precision: {TP / (TP + FP)}")
-    print(f"Recall: {TP / (TP + FN)}")
+    # print(f"Accuracy: {(TP + TN) / (TP + FN + TN + FP)}")
+    # print(f"Precision: {TP / (TP + FP)}")
+    # print(f"Recall: {TP / (TP + FN)}")
 
     y_pred_proba = model.decision_function(x_test)
     fpr, tpr, _ = metrics.roc_curve(y_test, y_pred_proba)
+    auc = metrics.roc_auc_score(y_test, y_pred_proba)
     # create ROC curve
-    plt.plot(fpr, tpr)
+    plt.plot(fpr, tpr, label = "auc="+str(auc))
+    plt.legend(loc=4)
     plt.ylabel('True Positive Rate')
     plt.xlabel('False Positive Rate')
     plt.show()
-    #plot_confusion_matrix(model, x_test, y_test)
-    #plt.show()
+    plot_confusion_matrix(model, x_test, y_test)
+    plt.show()
 
-    # TF Количество раз, которое слово встречается в документе, деленное на общее количество слов в документе.
-
-    # набор слов в виде вектора признаков (совершаем переход от набора слов к набору чисел)
-    # самый простой способ - работа со словарем
