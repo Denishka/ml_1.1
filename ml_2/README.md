@@ -15,7 +15,7 @@ TPR = TP / (TP + FN).
 False Positive Rate (FPR): какой процент среди всех negative неверно предсказан моделью.
 FPR = FP / (FP + TN).
 
-ROC — это просто отношение TPR к FPR.
+ROC — это просто отношение TPR к FPR. доля верных классифицированных / доля неверныъ
 
 ![Alt-текст](https://pythonru.com/wp-content/uploads/2021/04/roc-krivaya.png)
 
