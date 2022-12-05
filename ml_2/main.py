@@ -92,15 +92,15 @@ if __name__ == '__main__':
     x_train = vectorizer.fit_transform(x_train).toarray()
     x_test = vectorizer.transform(x_test).toarray()
 
-    indices_row_null = np.where(np.all(x_train == 0, axis=1))
+    indices_row_null = np.where(np.all(x_train == 0, axis=1)) #для двумерного axis = 1 - строка
     x_train = np.delete(x_train, indices_row_null, axis=0)
     y_train = np.delete(y_train, indices_row_null, axis=0)
 
-   # print('{1}-grams: {0}'.format(vectorizer.get_feature_names(), 2)) #вывод токенов в виде ngram = 2
+    print('{1}-grams: {0}'.format(vectorizer.get_feature_names(), 2)) #вывод токенов в виде ngram = 2
 
     # вычисление tf-idf
     idf = get_idf(x_train)
-    X_train = get_tf_idf(idf, x_train)
+    x_train = get_tf_idf(idf, x_train)
     x_test = get_tf_idf(idf, x_test)
 
     model = SGDClassifier()
@@ -111,14 +111,6 @@ if __name__ == '__main__':
     confusion_matrix = metrics.confusion_matrix(y_test, y_pred)
     print(confusion_matrix)
 
-    # TN = confusion_matrix[1, 1]
-    # TP = confusion_matrix[0, 0]
-    # FP = confusion_matrix[0, 1]
-    # FN = confusion_matrix[1, 0]
-
-    # print(f"Accuracy: {(TP + TN) / (TP + FN + TN + FP)}")
-    # print(f"Precision: {TP / (TP + FP)}")
-    # print(f"Recall: {TP / (TP + FN)}")
 
     y_pred_proba = model.decision_function(x_test)
     fpr, tpr, _ = metrics.roc_curve(y_test, y_pred_proba)
